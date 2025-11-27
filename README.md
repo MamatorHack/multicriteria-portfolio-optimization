@@ -1,11 +1,10 @@
-# multicriteria-portfolio-optimization
-# 📈 Optimisation de Portefeuille Multi-Critère
+# Optimisation de Portefeuille Multi-Critère
 
 Ce projet est la réalisation finale d'un TP sur la modélisation et la résolution d'un problème d'**optimisation de portefeuille d'actifs** . Il utilise la théorie moderne du portefeuille (Markowitz) et y ajoute des contraintes réelles du monde financier comme la **cardinalité** et les **coûts de transaction**.
 
 Le moteur d'optimisation est développé en **Python** et l'application est présentée via une interface interactive **Streamlit**.
 
-## 🚀 Fonctionnalités Clés
+## Fonctionnalités Clés
 
 Le projet résout un problème d'optimisation bi-objectif (Rendement vs. Risque) puis tri-objectif (Rendement vs. Risque vs. Coûts de Transaction), avec des contraintes opérationnelles :
 
@@ -15,7 +14,7 @@ Le projet résout un problème d'optimisation bi-objectif (Rendement vs. Risque)
 | **Niveau 2** | Rendement $(f_1)$, Risque $(f_2)$, **Coûts** $(f_3)$ | Cardinalité $(\text{Card}(w) = K)$, Rendement Min. | Optimisation Non-Convexe (Heuristique/Scalarisation) |
 | **Démonstrateur**| Visualisation et Sélection | $r_{min}$ (défini par l'utilisateur) | Streamlit |
 
-## 📐 Formalisation Mathématique
+## Formalisation Mathématique
 
 Le problème général consiste à minimiser une combinaison pondérée des objectifs sous contraintes :
 
@@ -88,6 +87,16 @@ streamlit run app.py
 L'application s'ouvrira automatiquement dans votre navigateur à l'adresse `http://localhost:8501`.
 
 -----
+
+## ✨ Aperçu de l'Application Streamlit
+
+Découvrez l'interface interactive et les visualisations clés offertes par l'application :
+
+| Vue 1 : Frontière Efficiente | Vue 2 : Analyse du Portefeuille Sélectionné |
+| :---: | :---: |
+| [Frontière de Pareto, Risque/Rendement et Coûts de Transaction](images/fond_1.png) | [Allocation d'Actifs et Exposition Sectorielle](images/fond_2.png) |
+
+----
 
 ## 💻 Développement
 
