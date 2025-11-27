@@ -90,11 +90,11 @@ L'application s'ouvrira automatiquement dans votre navigateur à l'adresse `http
 
 ## ✨ Aperçu de l'Application Streamlit
 
-Découvrez l'interface interactive et les visualisations clés offertes par l'application :
+### 1. Frontière Efficiente (Risque / Rendement)
+![Graphique de la frontière efficiente](images/fond_1.png)
 
-| Vue 1 : Frontière Efficiente | Vue 2 : Analyse du Portefeuille Sélectionné |
-| :---: | :---: |
-| [Frontière de Pareto, Risque/Rendement et Coûts de Transaction](images/fond_1.png) | [Allocation d'Actifs et Exposition Sectorielle](images/fond_2.png) |
+### 2. Allocation du Portefeuille Sélectionné
+![Graphiques d'allocation sectorielle](images/fond_2.png)
 
 ----
 
