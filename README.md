@@ -20,7 +20,9 @@ Le projet résout un problème d'optimisation bi-objectif (Rendement vs. Risque)
 Le problème général consiste à minimiser une combinaison pondérée des objectifs sous contraintes :
 
 $$
-\min_{w} \left\{ \lambda f_2(w) - (1-\lambda) f_1(w) + f_3(w) \right\}
+[
+\min_{w}\bigl(\lambda, f_2(w);-;(1-\lambda), f_1(w);+;f_3(w)\bigr)
+]
 $$
 
 Sujet à :
