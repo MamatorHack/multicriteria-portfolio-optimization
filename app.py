@@ -19,8 +19,8 @@ st.title("📊 Optimisation de Portefeuille Multi-Critère")
 st.markdown("""
 Cette application résout le problème d'allocation d'actifs en prenant en compte :
 * Le compromis **Rendement / Risque** (Markowitz)
-* Les **Coûts de Transaction** [cite: 87]
-* La **Cardinalité** (Nombre d'actifs max) [cite: 110]
+* Les **Coûts de Transaction**
+* La **Cardinalité** (Nombre d'actifs max)
 """)
 
 # --- SIDEBAR : Paramètres Utilisateur ---
@@ -124,4 +124,5 @@ if 'df_pareto' in st.session_state:
         st.warning(f"Impossible de trouver un portefeuille avec un rendement > {r_min_user:.2f} compte tenu des contraintes.")
 
 else:
+
     st.info("Cliquez sur 'Générer la Frontière de Pareto' pour lancer l'optimisation.")
