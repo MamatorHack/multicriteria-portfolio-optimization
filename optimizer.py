@@ -1,86 +1,115 @@
 import numpy as np
+import pandas as pd
+import os
 from scipy.optimize import minimize
 
 class PortfolioOptimizer:
-    def __init__(self, n_assets=10):
-        # Simulation de données (Remplaçable par yfinance pour des données réelles)
-        np.random.seed(42)
-        # Rendements attendus (mu) et Matrice de covariance (sigma)
-        self.mu = np.random.randn(n_assets) * 0.05 + 0.05
-        # Création d'une matrice semi-définie positive pour la covariance
-        A = np.random.randn(n_assets, n_assets)
-        self.sigma = np.dot(A, A.transpose())
-        self.n_assets = n_assets
-        self.asset_names = [f"Actif {i+1}" for i in range(n_assets)]
-        # Attribution de secteurs aléatoires pour le livrable final
-        self.sectors = np.random.choice(["Tech", "Santé", "Finance", "Industrie", "Énergie"], n_assets)
+    def __init__(self, data_folder="data"):
+        """
+        Initialise l'optimiseur en chargeant les données réelles depuis les CSV.
+        """
+        self.data_folder = data_folder
+        self.tickers = []
+        self.sectors = []
+        self.mu = None
+        self.sigma = None
+        self.asset_names = []
+        
+        # Chargement et traitement des données
+        self.load_and_process_data()
 
-    # --- Fonctions Objectifs [cite: 75, 87] ---
+    def load_and_process_data(self):
+        """Lit les CSV, fusionne les données et calcule Mu et Sigma."""
+        combined_df = pd.DataFrame()
+        sector_map = {}
+
+        # 1. Lecture de tous les CSV dans le dossier data
+        if not os.path.exists(self.data_folder):
+            raise FileNotFoundError(f"Le dossier '{self.data_folder}' n'existe pas. Lancez download.py d'abord.")
+
+        for filename in os.listdir(self.data_folder):
+            if filename.endswith(".csv"):
+                sector_name = filename.replace(".csv", "").replace("_", " ")
+                file_path = os.path.join(self.data_folder, filename)
+                
+                # Lecture du CSV
+                df = pd.read_csv(file_path, index_col="Date", parse_dates=True)
+                
+                # On stocke le secteur pour chaque ticker trouvé
+                for ticker in df.columns:
+                    sector_map[ticker] = sector_name
+                
+                # Fusion (concaténation sur l'axe des colonnes)
+                if combined_df.empty:
+                    combined_df = df
+                else:
+                    combined_df = pd.concat([combined_df, df], axis=1)
+
+        # 2. Nettoyage des données
+        # On supprime les colonnes vides ou avec trop de NaN
+        combined_df.dropna(axis=1, how='all', inplace=True) 
+        combined_df.dropna(inplace=True) # On garde les dates communes à tous
+
+        # 3. Calcul des Rendements (Returns)
+        # On utilise le log-returns ou simple pct_change. Ici pct_change pour Markowitz classique.
+        returns_df = combined_df.pct_change().dropna()
+
+        # 4. Stockage des attributs
+        self.asset_names = list(returns_df.columns)
+        self.n_assets = len(self.asset_names)
+        
+        # Mapping des secteurs pour l'affichage (aligné avec l'ordre des assets)
+        self.sectors = [sector_map.get(t, "Unknown") for t in self.asset_names]
+
+        # 5. Calculs Financiers
+        # Rendement moyen annuel (252 jours de trading)
+        self.mu = returns_df.mean().values * 252
+        
+        # Matrice de Covariance annuelle
+        self.sigma = returns_df.cov().values * 252
+
+    # --- Fonctions Objectifs (Inchangées) ---
     def f1_return(self, w):
-        """Maximiser le rendement (minimiser l'opposé)"""
         return -np.dot(w, self.mu)
 
     def f2_risk(self, w):
-        """Minimiser la variance (Risque de Markowitz)"""
         return np.dot(w.T, np.dot(self.sigma, w))
 
     def f3_cost(self, w, w_current, c_prop):
-        """Coûts de transaction proportionnels: sum(c * |w_new - w_old|)"""
         if w_current is None: return 0
         return np.sum(c_prop * np.abs(w - w_current))
 
-    # --- Moteur d'Optimisation ---
+    # --- Moteur d'Optimisation (Inchangé) ---
     def optimize(self, target_return=None, w_current=None, c_prop=0.0, k_cardinality=None, lmbda=0.5):
-        """
-        Résout le problème d'optimisation.
-        Gère le Niveau 1 (Markowitz) et Niveau 2 (Cardinalité + Coûts).
-        """
         n = self.n_assets
         
-        # Fonction objectif combinée (Scalarisation)
-        # On minimise: lambda * Risque + (1-lambda) * (-Rendement) + Coûts
         def objective(w):
             risk = self.f2_risk(w)
-            ret = -self.f1_return(w) # On remet en positif pour le calcul
+            ret = -self.f1_return(w)
             cost = self.f3_cost(w, w_current, c_prop)
-            
-            # Formule de compromis pondéré
+            # Normalisation basique pour éviter que le risque (souvent petit) soit écrasé par le rendement
+            # Note: Dans un cas réel, on affine lambda. Ici on garde simple.
             return lmbda * risk - (1 - lmbda) * ret + cost
 
-        # Contraintes de base [cite: 106]
-        # 1. Somme des poids = 1
         cons = [{'type': 'eq', 'fun': lambda w: np.sum(w) - 1}]
         
-        # 2. Rendement minimal (Si demandé par l'utilisateur via Streamlit) [cite: 124]
         if target_return is not None:
              cons.append({'type': 'ineq', 'fun': lambda w: -self.f1_return(w) - target_return})
 
-        # Bornes: Poids entre 0 et 1 (Pas de vente à découvert) [cite: 107]
         bounds = [(0, 1) for _ in range(n)]
 
-        # --- Gestion de la Cardinalité (Heuristique) [cite: 110] ---
-        # Si une cardinalité K est imposée, on fait une pré-optimisation pour trouver les meilleurs actifs
-        fixed_indices = []
+        # Gestion Cardinalité (Heuristique simplifiée)
         if k_cardinality is not None and k_cardinality < n:
-            # 1. Optimisation relaxée (sans cardinalité)
             w0 = np.ones(n) / n
+            # Petite optimisation rapide pour trouver les meilleurs candidats
             res_relaxed = minimize(objective, w0, method='SLSQP', bounds=bounds, constraints=cons)
-            
             if res_relaxed.success:
-                # 2. On garde les K plus grands poids
                 top_indices = np.argsort(res_relaxed.x)[-k_cardinality:]
-                
-                # 3. On force les autres à 0 via des bornes
                 bounds = []
                 for i in range(n):
-                    if i in top_indices:
-                        bounds.append((0, 1))
-                    else:
-                        bounds.append((0, 0)) # Force à 0
-            else:
-                return None # Échec de l'optimisation relaxée
+                    if i in top_indices: bounds.append((0, 1))
+                    else: bounds.append((0, 0)) 
 
-        # Optimisation Finale
         w0 = np.ones(n) / n
         result = minimize(objective, w0, method='SLSQP', bounds=bounds, constraints=cons)
         
@@ -90,7 +119,6 @@ class PortfolioOptimizer:
             return None
 
     def get_portfolio_metrics(self, w, w_current=None, c_prop=0.0):
-        """Retourne les métriques clés pour l'affichage"""
         ret = -self.f1_return(w)
         risk = self.f2_risk(w)
         cost = self.f3_cost(w, w_current, c_prop)
