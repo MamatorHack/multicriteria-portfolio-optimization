@@ -78,6 +78,10 @@ portfolio_project/
 
 ### 4\. Lancement de l'Application
 
+Avant de lancer l'application, vous devez télécharger les historiques de prix réels. Le script lit le fichier tick.json et stocke les CSV dans le dossier data/.
+
+python download.py
+
 Lancez l'application Streamlit depuis le répertoire racine du projet :
 
 ```bash
